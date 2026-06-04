@@ -18,7 +18,8 @@ logs
 .fleet
 .idea
 
-# Local env files
+# Env files — never commit .env (it may hold secrets). The committed template is
+# .env.example; copy it to .env to override the defaults locally.
 .env
 .env.*
 !.env.example

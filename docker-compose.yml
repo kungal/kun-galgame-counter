@@ -9,9 +9,13 @@
 # `air`/`nuxt dev`). For production (Dokploy + Traefik + GHCR image) see
 # docker-compose.prod.yml. Philosophy: ../kun-galgame-infra/docs/deploy.
 #
+# Port config: WEB_PORT / HOST_PORT, with inline defaults below so it runs with
+# NO .env at all. To override, set them in .env (gitignored; copy .env.example)
+# for local, or in Dokploy's Environment for prod — don't edit the numbers here.
+#
 #   docker compose build
 #   docker compose up -d
-#   curl -I http://localhost:15014/        # 503 (intentional maintenance status)
+#   curl -I http://localhost:15014/        # 503 (intentional); 15014 = HOST_PORT
 name: kungal-counter
 
 services:
@@ -26,18 +30,20 @@ services:
     env_file:
       - path: ./docker/web.env
         required: false
-    ports: ["15014:2326"]
+    environment:
+      NITRO_PORT: ${WEB_PORT:-2326} # listen port; override via .env (see .env.example)
+    ports: ["${HOST_PORT:-15014}:${WEB_PORT:-2326}"]
     volumes:
       - counter-data:/app/server/data
     healthcheck:
       # The page returns 503 by design (maintenance), so an HTTP probe on `/`
       # would read as unhealthy. node-slim has no curl either — use a tiny TCP
-      # liveness probe that only checks the port is accepting connections.
+      # liveness probe. It reads NITRO_PORT so it tracks WEB_PORT automatically.
       test:
         - CMD
         - node
         - -e
-        - "require('net').connect(2326,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"
+        - "const p=process.env.NITRO_PORT||3000;require('net').connect(p,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"
       interval: 10s
       timeout: 5s
       retries: 5

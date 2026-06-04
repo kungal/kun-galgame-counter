@@ -13,13 +13,32 @@ style as the rest of the 鲲 Galgame ecosystem
   dir, so without the volume every redeploy resets the count.
 - **Healthcheck is a TCP liveness probe**, not an HTTP check: the page returns
   `503` on purpose (maintenance), which an HTTP probe would read as unhealthy.
+- **One port knob, `WEB_PORT` (default `2326`).** The compose files carry it as
+  an inline default (`${WEB_PORT:-2326}`), so the stack runs with no config at
+  all; it feeds the container's `NITRO_PORT`, compose `expose`/`ports`, and the
+  healthcheck (which reads `NITRO_PORT`). To change it, see "Configuring the
+  port" below, then set the same number as Dokploy's **Container Port**.
+  `HOST_PORT` (default `15014`) is the dev-only host port.
 
 | File | Role |
 |---|---|
-| `docker/nuxt.Dockerfile` | Multi-stage build: `node:24-trixie-slim` → `.output`, runs as `node`, listens on `2326`. |
-| `docker-compose.yml` | **Dev/local**: `build:` + host port `15014:2326` + own network. |
+| `.env.example` | Template for the port knob (`WEB_PORT` / `HOST_PORT`). Copy to `.env` to override locally; `.env` is gitignored. |
+| `docker/nuxt.Dockerfile` | Multi-stage build: `node:24-trixie-slim` → `.output`, runs as `node`, listens on `NITRO_PORT` (default `2326`). |
+| `docker-compose.yml` | **Dev/local**: `build:` + host port `${HOST_PORT}:${WEB_PORT}` + own network. |
 | `docker-compose.prod.yml` | **Prod (Dokploy)**: GHCR `image:` + `expose:` + `dokploy-network`. |
 | `docker/web.env.example` | Copy to `docker/web.env` (gitignored) to set `COUNTER_IP_SALT`. |
+
+### Configuring the port
+
+The default (`2326`) is baked into the compose inline defaults, so **you only
+configure anything if you want a different port**:
+
+| Where | How |
+|---|---|
+| **Local dev** | `cp .env.example .env`, edit `WEB_PORT` / `HOST_PORT` (`.env` is gitignored). |
+| **Prod (Dokploy)** | App → **Environment** → add `WEB_PORT=…`, and set the Domains **Container Port** to match. No file on the server. |
+| **Plain `docker run`** | `-e NITRO_PORT=…` (overrides the image's baked default). |
+| **CI** | Nothing — it builds the image only (Dockerfile default), doesn't use compose. |
 
 ## Local
 
@@ -53,8 +72,8 @@ routing + automatic Let's Encrypt certs.
    docker compose -f docker-compose.prod.yml up -d
    ```
 4. **Domains** — on the `web` service's **Domains** tab add each domain above,
-   target **`web:2326`**. (apex↔www can be left side-by-side, or add a 301 to
-   converge them.)
+   Container Port **`WEB_PORT`** (default `2326`). (apex↔www can be left
+   side-by-side, or add a 301 to converge them.)
 5. **Env** — set `COUNTER_IP_SALT` in `docker/web.env` or Dokploy Environment;
    keep it stable so per-IP vote dedup survives restarts.
 

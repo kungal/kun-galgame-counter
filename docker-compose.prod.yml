@@ -6,13 +6,16 @@
 # and `expose:` not `ports:` (Traefik routes internally — no host ports in
 # prod). See ../kun-galgame-infra/docs/deploy/12-dokploy.md + 13-registry-ci.md.
 #
-# DOMAINS — in Dokploy add each to the `web` service's Domains tab, target
-# `web:2326` (Traefik auto-issues Let's Encrypt certs):
+# DOMAINS — in Dokploy add each to the `web` service's Domains tab, target the
+# `web` service on Container Port = WEB_PORT (default 2326); Traefik auto-issues
+# Let's Encrypt certs:
 #   down.kungal.com   www.kungal.com   kungal.com   www.moyu.moe   moyu.moe
 # (apex↔www can be left as-is, or add a 301 in Dokploy/Traefik to converge.)
 #
-# Votes persist to the `counter-data` volume across redeploys. Set
-# COUNTER_IP_SALT in docker/web.env (or Dokploy Environment) and keep it stable.
+# CONFIG — no .env file on the server; set these in Dokploy → app → Environment:
+#   • WEB_PORT (only if you change the port — also update the Container Port above)
+#   • COUNTER_IP_SALT (or in docker/web.env) — keep it stable. Rotate secrets.
+# Votes persist to the `counter-data` volume across redeploys.
 #
 #   docker compose -f docker-compose.prod.yml pull
 #   docker compose -f docker-compose.prod.yml up -d
@@ -24,16 +27,19 @@ services:
     env_file:
       - path: ./docker/web.env
         required: false
-    expose: ["2326"]
+    environment:
+      NITRO_PORT: ${WEB_PORT:-2326} # listen port; override in Dokploy Environment
+    expose: ["${WEB_PORT:-2326}"]
     volumes:
       - counter-data:/app/server/data
     healthcheck:
-      # 503-by-design page → TCP liveness probe, not an HTTP 200 check.
+      # 503-by-design page → TCP liveness probe, not an HTTP 200 check. Reads
+      # NITRO_PORT so it tracks WEB_PORT automatically.
       test:
         - CMD
         - node
         - -e
-        - "require('net').connect(2326,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"
+        - "const p=process.env.NITRO_PORT||3000;require('net').connect(p,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"
       interval: 10s
       timeout: 5s
       retries: 5

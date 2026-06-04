@@ -11,6 +11,9 @@
 # only knob is COUNTER_IP_SALT, read at RUNTIME by the server route, so it is
 # NOT a build arg. See docker/README.md.
 ARG NODE_VERSION=24
+# Default listen port baked into the image. Overridden at runtime by NITRO_PORT
+# (the compose files set it from WEB_PORT in .env — the single source of truth).
+ARG PORT=2326
 
 FROM node:${NODE_VERSION}-trixie-slim AS base
 RUN corepack enable
@@ -30,7 +33,8 @@ RUN pnpm build
 
 # ---- run: just Node + .output (no pnpm, no sources) ----
 FROM node:${NODE_VERSION}-trixie-slim AS run
-ENV NODE_ENV=production HOST=0.0.0.0 NITRO_PORT=2326
+ARG PORT
+ENV NODE_ENV=production HOST=0.0.0.0 NITRO_PORT=${PORT}
 WORKDIR /app
 COPY --from=build /app/.output ./.output
 # Votes are persisted to <cwd>/server/data/counter.json (counter.ts), which the
@@ -39,5 +43,5 @@ COPY --from=build /app/.output ./.output
 # redeploy. See the `counter-data` volume in the compose files.
 RUN mkdir -p /app/server/data && chown -R node:node /app/server/data
 USER node
-EXPOSE 2326
+EXPOSE ${PORT}
 CMD ["node", ".output/server/index.mjs"]
