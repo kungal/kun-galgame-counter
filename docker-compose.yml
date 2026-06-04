@@ -1,0 +1,48 @@
+# kun-galgame-counter — DEV / local compose.
+#
+# A standalone Nuxt 4 SSR "down for maintenance" page + a tiny vote counter.
+# Unlike kungal/moyu it owns NO backing services and joins NO shared network:
+# no Postgres/Redis/OAuth/image — the only state is the vote tally, persisted to
+# a JSON file on a local named volume. Just one `web` container.
+#
+# Dev: build locally + publish a host port (1xxxx range, coexists with a running
+# `air`/`nuxt dev`). For production (Dokploy + Traefik + GHCR image) see
+# docker-compose.prod.yml. Philosophy: ../kun-galgame-infra/docs/deploy.
+#
+#   docker compose build
+#   docker compose up -d
+#   curl -I http://localhost:15014/        # 503 (intentional maintenance status)
+name: kungal-counter
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: docker/nuxt.Dockerfile
+    image: kungal-counter/web
+    # COUNTER_IP_SALT only. Optional in dev (the app has a built-in fallback), so
+    # the file is not required — copy docker/web.env.example to docker/web.env to
+    # set it. Rotate / set a real value in prod.
+    env_file:
+      - path: ./docker/web.env
+        required: false
+    ports: ["15014:2326"]
+    volumes:
+      - counter-data:/app/server/data
+    healthcheck:
+      # The page returns 503 by design (maintenance), so an HTTP probe on `/`
+      # would read as unhealthy. node-slim has no curl either — use a tiny TCP
+      # liveness probe that only checks the port is accepting connections.
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('net').connect(2326,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+
+volumes:
+  counter-data:

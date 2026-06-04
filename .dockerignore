@@ -1,0 +1,29 @@
+# The build context is the repo root — strip everything not needed to build
+# .output, or Docker ships node_modules / build output to the daemon.
+.git
+.github
+node_modules
+.nuxt
+.output
+.nitro
+.data
+.cache
+dist
+*.log
+.DS_Store
+
+# Local env / secrets — never bake into an image. docker/*.env is read at
+# RUNTIME via env_file, NOT copied in.
+.env
+.env.*
+docker/*.env
+
+# Runtime vote data — persisted via a volume, never baked into the image
+# (also keeps local votes out of the build context).
+server/data
+
+# Not needed to build the image.
+.vscode
+docker/README.md
+README.md
+ecosystem.config.cjs

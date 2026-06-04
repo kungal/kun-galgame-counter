@@ -1,0 +1,49 @@
+# kun-galgame-counter — PRODUCTION compose (Dokploy + Traefik + GHCR image).
+#
+# Standalone: owns no backing services, no s2s calls. It joins the shared
+# `dokploy-network` only so Dokploy's Traefik can route the public domains to
+# it. vs docker-compose.yml (dev): `image:` not `build:` (CI pushes to GHCR),
+# and `expose:` not `ports:` (Traefik routes internally — no host ports in
+# prod). See ../kun-galgame-infra/docs/deploy/12-dokploy.md + 13-registry-ci.md.
+#
+# DOMAINS — in Dokploy add each to the `web` service's Domains tab, target
+# `web:2326` (Traefik auto-issues Let's Encrypt certs):
+#   down.kungal.com   www.kungal.com   kungal.com   www.moyu.moe   moyu.moe
+# (apex↔www can be left as-is, or add a 301 in Dokploy/Traefik to converge.)
+#
+# Votes persist to the `counter-data` volume across redeploys. Set
+# COUNTER_IP_SALT in docker/web.env (or Dokploy Environment) and keep it stable.
+#
+#   docker compose -f docker-compose.prod.yml pull
+#   docker compose -f docker-compose.prod.yml up -d
+name: kungal-counter
+
+services:
+  web:
+    image: ghcr.io/kun1007/kungal-counter-web:latest
+    env_file:
+      - path: ./docker/web.env
+        required: false
+    expose: ["2326"]
+    volumes:
+      - counter-data:/app/server/data
+    healthcheck:
+      # 503-by-design page → TCP liveness probe, not an HTTP 200 check.
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('net').connect(2326,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+
+volumes:
+  counter-data:
+
+networks:
+  default:
+    name: dokploy-network
+    external: true
