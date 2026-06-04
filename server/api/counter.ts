@@ -1,19 +1,34 @@
 import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import { dirname, join } from 'node:path'
-import { defineEventHandler, createError } from 'h3'
+import { defineEventHandler, readBody, createError } from 'h3'
 import { getRemoteIp } from '~~/server/utils/ip'
+
+// The three things one can feel about 莲. Kept server-side as the source of
+// truth so a forged POST body can't invent new option keys.
+const OPTION_VALUES = ['cute', 'adorable', 'both'] as const
+type OptionValue = (typeof OPTION_VALUES)[number]
+const isOptionValue = (value: unknown): value is OptionValue =>
+  typeof value === 'string' && (OPTION_VALUES as readonly string[]).includes(value)
 
 type CounterData = {
   total: number
+  options: Record<OptionValue, number>
+  // hashed ip -> the option value that ip voted for
   ips: Record<string, string>
 }
 
 const dataPath = join(process.cwd(), 'server', 'data', 'counter.json')
-const defaultData: CounterData = {
+const emptyOptions = (): Record<OptionValue, number> => ({
+  cute: 0,
+  adorable: 0,
+  both: 0,
+})
+const defaultData = (): CounterData => ({
   total: 0,
+  options: emptyOptions(),
   ips: {},
-}
+})
 
 // Visitor IPs are never stored in plaintext. We keep a salted hash only so we
 // can dedupe repeat votes without committing raw IPs to disk / git.
@@ -40,7 +55,7 @@ async function ensureDataFile() {
   try {
     await access(dataPath)
   } catch {
-    await writeFile(dataPath, JSON.stringify(defaultData, null, 2), 'utf-8')
+    await writeFile(dataPath, JSON.stringify(defaultData(), null, 2), 'utf-8')
   }
 }
 
@@ -48,14 +63,20 @@ async function readData(): Promise<CounterData> {
   await ensureDataFile()
   const raw = await readFile(dataPath, 'utf-8')
   try {
-    const parsed = JSON.parse(raw) as CounterData
+    const parsed = JSON.parse(raw) as Partial<CounterData>
     return {
       total: parsed.total ?? 0,
+      options: {
+        cute: parsed.options?.cute ?? 0,
+        adorable: parsed.options?.adorable ?? 0,
+        both: parsed.options?.both ?? 0,
+      },
       ips: parsed.ips ?? {},
     }
   } catch {
-    await writeFile(dataPath, JSON.stringify(defaultData, null, 2), 'utf-8')
-    return { ...defaultData, ips: {} }
+    const fresh = defaultData()
+    await writeFile(dataPath, JSON.stringify(fresh, null, 2), 'utf-8')
+    return fresh
   }
 }
 
@@ -69,12 +90,19 @@ export default defineEventHandler(async (event) => {
   const ip = Array.isArray(ipData) ? ipData[0] : ipData
   const ipKey = ip ? hashIp(ip) : ''
 
-  if (event.method === 'GET') {
-    const data = await withLock(readData)
+  const toResponse = (data: CounterData) => {
+    const selected = ipKey ? data.ips[ipKey] : undefined
     return {
       total: data.total,
-      clicked: Boolean(ipKey && data.ips[ipKey]),
+      options: data.options,
+      clicked: Boolean(selected),
+      selected: isOptionValue(selected) ? selected : null,
     }
+  }
+
+  if (event.method === 'GET') {
+    const data = await withLock(readData)
+    return toResponse(data)
   }
 
   if (event.method === 'POST') {
@@ -85,17 +113,25 @@ export default defineEventHandler(async (event) => {
       })
     }
 
+    const body = await readBody<{ option?: unknown }>(event)
+    if (!isOptionValue(body?.option)) {
+      throw createError({ statusCode: 400, statusMessage: '未知的投票选项' })
+    }
+    const option = body.option
+
     return withLock(async () => {
       const data = await readData()
       if (data.ips[ipKey]) {
-        return { total: data.total, clicked: true }
+        // Already voted: report their existing choice, don't double count.
+        return toResponse(data)
       }
 
       data.total += 1
-      data.ips[ipKey] = new Date().toISOString()
+      data.options[option] += 1
+      data.ips[ipKey] = option
       await writeData(data)
 
-      return { total: data.total, clicked: true }
+      return toResponse(data)
     })
   }
 

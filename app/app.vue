@@ -28,16 +28,29 @@
           v-for="option in options"
           :key="option.value"
           class="option"
+          :class="{ 'option-active': selectedValue === option.value }"
           :disabled="pending || loading || hasClicked"
           @click="handleSelect(option)"
         >
-          <span class="option-label">{{ option.label }}</span>
+          <span class="option-main">
+            <span class="option-label">{{ option.label }}</span>
+            <span class="option-count">
+              {{ optionCounts[option.value] ?? 0 }} 票 ·
+              {{ optionPercent(option.value) }}%
+            </span>
+          </span>
+          <span class="option-bar">
+            <span
+              class="option-bar-fill"
+              :style="{ width: optionPercent(option.value) + '%' }"
+            />
+          </span>
           <span class="option-desc">{{ option.description }}</span>
         </button>
       </div>
 
-      <p v-if="selectedOption" class="selection">
-        你选择了「{{ selectedOption }}」。
+      <p v-if="selectedLabel" class="selection">
+        你选择了「{{ selectedLabel }}」。
       </p>
 
       <p v-if="message" class="message">
@@ -110,16 +123,31 @@ const options: VoteOption[] = [
 const { data, pending, error } = useFetch('/api/counter', {
   default: () => ({
     total: 0,
+    options: { cute: 0, adorable: 0, both: 0 },
     clicked: false,
+    selected: null as string | null,
   }),
 })
 
 const loading = ref(false)
 const message = ref('')
-const selectedOption = ref('')
 
 const total = computed(() => data.value?.total ?? 0)
 const hasClicked = computed(() => Boolean(data.value?.clicked))
+const optionCounts = computed<Record<string, number>>(
+  () => (data.value?.options as Record<string, number>) ?? {}
+)
+const selectedValue = computed(() => data.value?.selected ?? '')
+const selectedLabel = computed(
+  () => options.find((option) => option.value === selectedValue.value)?.label ?? ''
+)
+
+const optionPercent = (value: string) => {
+  if (!total.value) {
+    return 0
+  }
+  return Math.round(((optionCounts.value[value] ?? 0) / total.value) * 100)
+}
 
 watch(error, (err) => {
   if (err) {
@@ -145,7 +173,6 @@ const handleSelect = async (option: VoteOption) => {
     })
 
     data.value = result
-    selectedOption.value = option.label
     message.value = '最喜欢莲了!!!'
   } catch (err) {
     console.error(err)
@@ -254,15 +281,51 @@ h1 {
   opacity: 0.55;
 }
 
+.option-active {
+  outline: 2px solid #0070f0;
+  outline-offset: -2px;
+}
+
+.option-main {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
 .option-label {
   font-size: 1.1rem;
   font-weight: 600;
   color: #3c3a43;
 }
 
+.option-count {
+  flex-shrink: 0;
+  color: #4c5a86;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.option-bar {
+  display: block;
+  margin-top: 0.6rem;
+  height: 4px;
+  border-radius: 2px;
+  background: #0070f01a;
+  overflow: hidden;
+}
+
+.option-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: #0070f0;
+  transition: width 0.4s ease;
+}
+
 .option-desc {
   display: block;
-  margin-top: 0.35rem;
+  margin-top: 0.45rem;
   color: #6c6a78;
   font-size: 0.9rem;
 }
