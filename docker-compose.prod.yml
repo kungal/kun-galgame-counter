@@ -24,6 +24,11 @@ name: kungal-counter
 services:
   web:
     image: ghcr.io/kungal/counter-web:latest
+    # `:latest` is a moving tag. Without this, `docker compose up` reuses a
+    # locally-cached :latest and never sees a freshly-pushed image — so a redeploy
+    # keeps serving the old build. `always` re-pulls on every up. (Dokploy reads
+    # this compose from the repo, so a redeploy picks up the latest image.)
+    pull_policy: always
     env_file:
       - path: ./docker/web.env
         required: false
