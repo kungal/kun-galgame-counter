@@ -11,7 +11,9 @@ export const getRemoteIp = (event: H3Event) => {
   }
 
   const xRealIp = event.node.req.headers['x-real-ip']
-  const cfConnectingIp = event.node.req.headers['CF-Connecting-IP']
+  // Node lowercases all incoming header names, so this must be lowercase
+  // or Cloudflare's real client IP is never read.
+  const cfConnectingIp = event.node.req.headers['cf-connecting-ip']
 
   return cfConnectingIp || ipForwarded() || xRealIp || ''
 }

@@ -5,6 +5,6 @@ export default defineNuxtRouteMiddleware((to) => {
 
   return navigateTo('/', {
     replace: true,
-    redirectCode: process.server ? 302 : undefined,
+    redirectCode: import.meta.server ? 302 : undefined,
   })
 })

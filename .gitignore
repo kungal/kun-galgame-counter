@@ -22,3 +22,6 @@ logs
 .env
 .env.*
 !.env.example
+
+# Runtime counter data (do not commit; contains hashed visitor data)
+server/data/counter.json

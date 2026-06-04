@@ -3,8 +3,8 @@
   <div class="page">
     <div class="card">
       <p class="kun">
-        <img src="/favicon.ico" />
-        鲲 Galgame 补丁
+        <img src="/favicon.ico" alt="" />
+        鲲 Galgame 正在临时下线维护中...
       </p>
       <h1>莲是可爱的孩子吗？</h1>
       <a
@@ -69,7 +69,18 @@
 <script setup lang="ts">
 useHead({
   title: '莲是世界上最可爱的孩子!',
+  htmlAttrs: { lang: 'zh-CN' },
 })
+
+// This is a maintenance page. Respond with 503 + Retry-After so search engines
+// treat the downtime as temporary instead of deindexing the real site.
+if (import.meta.server) {
+  const event = useRequestEvent()
+  if (event) {
+    setResponseStatus(event, 503)
+    event.node.res.setHeader('Retry-After', '3600')
+  }
+}
 
 type VoteOption = {
   value: string
@@ -147,7 +158,8 @@ const handleSelect = async (option: VoteOption) => {
 
 <style scoped>
 :global(body) {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
     'Microsoft YaHei', sans-serif;
   margin: 0;
   color: #2f2c35;
