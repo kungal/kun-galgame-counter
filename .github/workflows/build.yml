@@ -38,10 +38,10 @@ jobs:
           file: docker/nuxt.Dockerfile
           push: true
           tags: |
-            ghcr.io/kun1007/kungal-counter-web:latest
-            ghcr.io/kun1007/kungal-counter-web:${{ github.sha }}
-          cache-from: type=gha,scope=kungal-counter-web
-          cache-to: type=gha,mode=max,scope=kungal-counter-web
+            ghcr.io/kungal/counter-web:latest
+            ghcr.io/kungal/counter-web:${{ github.sha }}
+          cache-from: type=gha,scope=counter-web
+          cache-to: type=gha,mode=max,scope=counter-web
 
   deploy:
     needs: build

@@ -20,7 +20,7 @@ name: kungal-counter
 
 services:
   web:
-    image: ghcr.io/kun1007/kungal-counter-web:latest
+    image: ghcr.io/kungal/counter-web:latest
     env_file:
       - path: ./docker/web.env
         required: false

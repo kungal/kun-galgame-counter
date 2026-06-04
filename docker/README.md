@@ -42,8 +42,8 @@ routing + automatic Let's Encrypt certs.
    [`13-registry-ci.md`](../../kun-galgame-infra/docs/deploy/13-registry-ci.md)),
    or build locally and push:
    ```bash
-   docker build -f docker/nuxt.Dockerfile -t ghcr.io/kun1007/kungal-counter-web:latest .
-   docker push ghcr.io/kun1007/kungal-counter-web:latest
+   docker build -f docker/nuxt.Dockerfile -t ghcr.io/kungal/counter-web:latest .
+   docker push ghcr.io/kungal/counter-web:latest
    ```
 2. **DNS** — point all of these A/AAAA records at the server's public IP:
    `down.kungal.com`, `www.kungal.com`, `kungal.com`, `www.moyu.moe`, `moyu.moe`.
