@@ -6,6 +6,22 @@
         <img src="/favicon.ico" alt="" />
         鲲 Galgame 正在临时下线维护中...
       </p>
+
+      <div class="notice">
+        <p class="notice-title">鲲 Galgame 论坛 和 鲲 Galgame 补丁 正在升级维护</p>
+        <p class="notice-text">
+          此过程大概需要半个小时，查询最新进度请加入 Telegram 群组
+          <a
+            class="notice-link"
+            href="https://t.me/kungalgame"
+            target="_blank"
+            rel="noopener"
+          >
+            t.me/kungalgame
+          </a>
+        </p>
+      </div>
+
       <h1>莲是可爱的孩子吗？</h1>
       <a
         href="https://s.iloveren.link/s/moyumoe2"
@@ -210,6 +226,37 @@ const handleSelect = async (option: VoteOption) => {
   border-radius: 16px;
   width: 16px;
   margin-right: 8px;
+}
+
+.notice {
+  margin: 1.25rem 0 0.5rem;
+  padding: 1rem 1.2rem;
+  background: #0070f012;
+  text-align: left;
+  line-height: 1.65;
+}
+
+.notice-title {
+  margin: 0 0 0.4rem;
+  font-weight: 600;
+  color: #3c3a43;
+}
+
+.notice-text {
+  margin: 0;
+  color: #5d5a68;
+  font-size: 0.95rem;
+}
+
+.notice-link {
+  color: #0070f0;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.notice-link:hover {
+  text-decoration: underline;
 }
 
 .ren {
