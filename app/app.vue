@@ -59,7 +59,7 @@
 
       <a
         class="github"
-        href="https://github.com/KUN1007/kun-galgame-nuxt4"
+        href="https://github.com/kungal"
         target="_blank"
       >
         <svg
@@ -184,6 +184,12 @@ const handleSelect = async (option: VoteOption) => {
 </script>
 
 <style scoped>
+:global(*),
+:global(*::before),
+:global(*::after) {
+  box-sizing: border-box;
+}
+
 :global(body) {
   font-family:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
@@ -221,7 +227,7 @@ const handleSelect = async (option: VoteOption) => {
 .page {
   display: grid;
   place-items: center;
-  height: 90dvh;
+  min-height: 90dvh;
   padding: 3rem 1rem;
 }
 
