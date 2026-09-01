@@ -4,7 +4,7 @@
 # `dokploy-network` only so Dokploy's Traefik can route the public domains to
 # it. vs docker-compose.yml (dev): `image:` not `build:` (CI pushes to GHCR),
 # and `expose:` not `ports:` (Traefik routes internally — no host ports in
-# prod). See ../kun-galgame-infra/docs/deploy/12-dokploy.md + 13-registry-ci.md.
+# prod). See ../nextmoe-infra/docs/deploy/12-dokploy.md + 13-registry-ci.md.
 #
 # DOMAINS — in Dokploy add each to the `web` service's Domains tab, target the
 # `web` service on Container Port = WEB_PORT (default 2326); Traefik auto-issues

@@ -2,7 +2,7 @@
 
 The "down for maintenance" page + tiny vote counter, containerized in the same
 style as the rest of the 鲲 Galgame ecosystem
-(see [`kun-galgame-infra/docs/deploy`](../../kun-galgame-infra/docs/deploy)), but
+(see [`nextmoe-infra/docs/deploy`](../../nextmoe-infra/docs/deploy)), but
 **stripped to what a standalone app needs**:
 
 - **No shared infrastructure.** It owns no Postgres/Redis/MinIO/Meili and makes
@@ -53,12 +53,12 @@ docker compose down                    # keeps the counter-data volume
 
 ## Production (Dokploy + Traefik)
 
-Mirrors [`12-dokploy.md`](../../kun-galgame-infra/docs/deploy/12-dokploy.md): one
+Mirrors [`12-dokploy.md`](../../nextmoe-infra/docs/deploy/12-dokploy.md): one
 Dokploy **Compose** application on the shared `dokploy-network`; Traefik handles
 routing + automatic Let's Encrypt certs.
 
 1. **Image** — build & push to GHCR (CI, per
-   [`13-registry-ci.md`](../../kun-galgame-infra/docs/deploy/13-registry-ci.md)),
+   [`13-registry-ci.md`](../../nextmoe-infra/docs/deploy/13-registry-ci.md)),
    or build locally and push:
    ```bash
    docker build -f docker/nuxt.Dockerfile -t ghcr.io/kungal/counter-web:latest .

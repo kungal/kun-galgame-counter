@@ -7,7 +7,7 @@
 #
 # Dev: build locally + publish a host port (1xxxx range, coexists with a running
 # `air`/`nuxt dev`). For production (Dokploy + Traefik + GHCR image) see
-# docker-compose.prod.yml. Philosophy: ../kun-galgame-infra/docs/deploy.
+# docker-compose.prod.yml. Philosophy: ../nextmoe-infra/docs/deploy.
 #
 # Port config: WEB_PORT / HOST_PORT, with inline defaults below so it runs with
 # NO .env at all. To override, set them in .env (gitignored; copy .env.example)
